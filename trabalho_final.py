@@ -2,11 +2,12 @@ import pandas as pd
 import numpy as np
 import mlflow
 import mlflow.sklearn
+import mlflow.xgboost
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 # Configurar MLflow
 mlflow.set_tracking_uri("http://localhost:5000")
@@ -52,8 +53,13 @@ for fold, (train_index, test_index) in enumerate(kf.split(X, y)):
         acc_xgb = accuracy_score(y_test, y_pred_xgb)
         xgb_accuracies.append(acc_xgb)
 
+        # Relatório de classificação e matriz de confusão
+        report_xgb = classification_report(y_test, y_pred_xgb, output_dict=True)
+        conf_matrix_xgb = confusion_matrix(y_test, y_pred_xgb)
+
         mlflow.log_metric("xgb_accuracy", acc_xgb)
-        mlflow.sklearn.log_model(xgb, "xgb_model")
+        mlflow.log_dict(report_xgb, "xgb_classification_report.json")
+        mlflow.xgboost.log_model(xgb, "xgb_model")
 
         # Modelo Regressão Logística
         log_reg = LogisticRegression(max_iter=2000, class_weight="balanced", solver="saga")
@@ -62,10 +68,21 @@ for fold, (train_index, test_index) in enumerate(kf.split(X, y)):
         acc_log_reg = accuracy_score(y_test, y_pred_log_reg)
         log_reg_accuracies.append(acc_log_reg)
 
+        # Relatório de classificação e matriz de confusão
+        report_log_reg = classification_report(y_test, y_pred_log_reg, output_dict=True)
+        conf_matrix_log_reg = confusion_matrix(y_test, y_pred_log_reg)
+
         mlflow.log_metric("log_reg_accuracy", acc_log_reg)
+        mlflow.log_dict(report_log_reg, "log_reg_classification_report.json")
         mlflow.sklearn.log_model(log_reg, "log_reg_model")
 
-        print(f"Fold {fold+1} concluído! XGBoost Acc: {acc_xgb:.4f}, Logistic Reg Acc: {acc_log_reg:.4f}")
+        print(f"\n🔹 Fold {fold+1} concluído!")
+        print(f"📌 XGBoost Acc: {acc_xgb:.4f}")
+        print(f"📌 Regressão Logística Acc: {acc_log_reg:.4f}")
+        print("\nMatriz de Confusão - XGBoost:")
+        print(conf_matrix_xgb)
+        print("\nMatriz de Confusão - Regressão Logística:")
+        print(conf_matrix_log_reg)
 
 # Resultados finais
 print(f"\n🏆 XGBoost Média de Acurácia: {np.mean(xgb_accuracies):.4f}")
