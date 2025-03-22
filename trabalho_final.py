@@ -1,10 +1,16 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import StratifiedKFold, train_test_split
+import mlflow
+import mlflow.sklearn
+from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.linear_model import LogisticRegression
 from xgboost import XGBClassifier
 from sklearn.metrics import accuracy_score
+
+# Configurar MLflow
+mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_experiment("churn_prediction")
 
 # Carregar os dados
 df = pd.read_csv("data/raw/telecom_churn.csv")
@@ -29,7 +35,7 @@ xgb_accuracies = []
 log_reg_accuracies = []
 
 # Loop de validação cruzada
-for train_index, test_index in kf.split(X, y):
+for fold, (train_index, test_index) in enumerate(kf.split(X, y)):
     X_train, X_test = X.iloc[train_index], X.iloc[test_index]
     y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
@@ -38,21 +44,28 @@ for train_index, test_index in kf.split(X, y):
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    # Modelo XGBoost
-    xgb = XGBClassifier(eval_metric="logloss", random_state=42)
-    xgb.fit(X_train, y_train)
-    y_pred_xgb = xgb.predict(X_test)
-    acc_xgb = accuracy_score(y_test, y_pred_xgb)
-    xgb_accuracies.append(acc_xgb)
+    with mlflow.start_run(run_name=f"fold_{fold+1}"):
+        # Modelo XGBoost
+        xgb = XGBClassifier(eval_metric="logloss", random_state=42)
+        xgb.fit(X_train, y_train)
+        y_pred_xgb = xgb.predict(X_test)
+        acc_xgb = accuracy_score(y_test, y_pred_xgb)
+        xgb_accuracies.append(acc_xgb)
 
-    # Modelo Regressão Logística
-    log_reg = LogisticRegression(max_iter=2000, class_weight="balanced", solver="saga")
-    log_reg.fit(X_train_scaled, y_train)
-    y_pred_log_reg = log_reg.predict(X_test_scaled)
-    acc_log_reg = accuracy_score(y_test, y_pred_log_reg)
-    log_reg_accuracies.append(acc_log_reg)
+        mlflow.log_metric("xgb_accuracy", acc_xgb)
+        mlflow.sklearn.log_model(xgb, "xgb_model")
 
-    print(f"Fold concluído! XGBoost Acc: {acc_xgb:.4f}, Logistic Reg Acc: {acc_log_reg:.4f}")
+        # Modelo Regressão Logística
+        log_reg = LogisticRegression(max_iter=2000, class_weight="balanced", solver="saga")
+        log_reg.fit(X_train_scaled, y_train)
+        y_pred_log_reg = log_reg.predict(X_test_scaled)
+        acc_log_reg = accuracy_score(y_test, y_pred_log_reg)
+        log_reg_accuracies.append(acc_log_reg)
+
+        mlflow.log_metric("log_reg_accuracy", acc_log_reg)
+        mlflow.sklearn.log_model(log_reg, "log_reg_model")
+
+        print(f"Fold {fold+1} concluído! XGBoost Acc: {acc_xgb:.4f}, Logistic Reg Acc: {acc_log_reg:.4f}")
 
 # Resultados finais
 print(f"\n🏆 XGBoost Média de Acurácia: {np.mean(xgb_accuracies):.4f}")
