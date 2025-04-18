@@ -97,7 +97,7 @@ for fold, (train_index, test_index) in enumerate(kf.split(X, y)):
             best_xgb_model = xgb
         
         logger.debug(f"Acurácia XGBoost (fold {fold+1}): {acc_xgb:.4f}")
-        mlflow.log_metric('r2',acc_xgb)
+        mlflow.log_metric("Acurácia: ", acc_xgb)
 
         report_xgb = classification_report(y_test, y_pred_xgb, output_dict=True)
         mlflow.log_metric("xgb_accuracy", acc_xgb)
