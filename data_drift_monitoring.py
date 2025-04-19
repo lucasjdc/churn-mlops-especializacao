@@ -16,3 +16,6 @@ report.run(reference_data=df_ref, current_data=df_cur)
 
 # Salvar em HTML
 report.save_html("drift_report.html")
+
+# Mensagem de sucesso
+print("✅ Relatório de Data Drift gerado com sucesso e salvo como 'drift_report.html'.")

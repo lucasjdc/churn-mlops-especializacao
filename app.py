@@ -3,8 +3,9 @@ import mlflow
 import numpy as np
 from pydantic import BaseModel
 import logging
+from mlflow.tracking import MlflowClient
 
-# Configuração básica de logging
+# Configuração de log
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s"
@@ -12,14 +13,15 @@ logging.basicConfig(
 
 app = FastAPI()
 
-# Log ao iniciar o app
+# Log de inicialização
 logging.info("Iniciando a aplicação e carregando o modelo...")
 
-# Caminho do modelo
-model_path = "/home/lucas/Especializacao/MLOps/atividade_2/mlartifacts/766149959934061426/4b298027518b41e083ad5ddfba630928/artifacts/log_reg_model"
-
+# Obter o modelo mais recente automaticamente
 try:
-    model = mlflow.pyfunc.load_model(model_path)
+    client = MlflowClient()
+    latest_model = client.get_latest_versions("log_reg_model", stages=["None", "Staging", "Production"])[-1]
+    model_uri = f"runs:/{latest_model.run_id}/log_reg_model"
+    model = mlflow.pyfunc.load_model(model_uri)
     logging.info("Modelo carregado com sucesso.")
 except Exception as e:
     logging.error(f"Erro ao carregar o modelo: {e}")
@@ -40,3 +42,4 @@ async def predict(data: Data):
     except Exception as e:
         logging.error(f"Erro durante predição: {e}")
         return {"error": str(e)}
+
