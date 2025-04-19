@@ -2,7 +2,6 @@ import mlflow
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 
-# Caminho correto para o modelo registrado. Corrija o caminho conforme necessário.
 logged_model = '/home/lucas/Especializacao/MLOps/atividade_2/mlartifacts/766149959934061426/4b298027518b41e083ad5ddfba630928/artifacts/log_reg_model'
 
 # Carregar o modelo registrado como um PyFuncModel.
@@ -11,7 +10,6 @@ loaded_model = mlflow.pyfunc.load_model(logged_model)
 # Carregar os dados para previsão.
 data = pd.read_csv('data/processed/telecom_churn_X.csv')
 
-# Identificar variáveis categóricas (isso pode variar dependendo do seu conjunto de dados)
 categorical_columns = data.select_dtypes(include=['object']).columns
 
 # Instanciar o LabelEncoder
@@ -24,9 +22,9 @@ for col in categorical_columns:
 # Realizar a previsão no conjunto de dados.
 predicted = loaded_model.predict(data)
 
-# Ajuste de limiar (tente ajustar este valor, por exemplo, para 0.3 ou 0.7)
-threshold = 0.6  # Ajuste este valor conforme necessário para equilibrar as classes
-data['predicted'] = predicted > threshold  # Defina a predição como True se a probabilidade for maior que o limiar
+# Ajuste de limiar
+threshold = 0.6  
+data['predicted'] = predicted > threshold  
 
 # Salvar as previsões em um novo arquivo CSV.
 data.to_csv('data/predictions/churn.csv', index=False)
