@@ -27,8 +27,9 @@ for col in categorical_cols:
 preds = model.predict(data)
 
 # Aplicar limiar
-data['predicted'] = preds > 0.5  # ou use threshold mais conservador, como 0.6
+data['predicted'] = preds > 0.6
 
 # Salvar resultados
 data.to_csv("data/predictions/churn.csv", index=False)
 print("Predições salvas em 'data/predictions/churn.csv'")
+
